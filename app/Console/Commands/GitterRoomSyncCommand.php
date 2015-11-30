@@ -1,9 +1,9 @@
 <?php
 namespace App\Console\Commands;
 
-use App\Gitter\Client;
-use App\Message;
 use App\User;
+use App\Message;
+use App\Gitter\Client;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository;
 
@@ -25,21 +25,32 @@ class GitterRoomSyncCommand extends Command
 
     /**
      * @param Repository $config
+     * @throws \Exception
      */
     public function handle(Repository $config)
     {
-        $client = new Client($config->get('gitter.token'));
-        $room   = $client->room('52f9b90e5e986b0712ef6b9d');
-
-        foreach ($room->users as $i => $gitter) {
-            echo "\r" . 'Loading users ' . $i;
-            User::createFromGitter($gitter);
+        if (!($roomId = $config->get('gitter.rooms')[$this->argument('room')] ?? null)) {
+            throw new \Exception('Broken gitter room name');
         }
 
-        echo "\n";
+        if (!($token = $config->get('gitter.token'))) {
+            throw new \Exception('Gitter token not defined');
+        }
 
-        foreach ($room->messages as $i => $message) {
-            echo "\r" . 'Loading messages ' . $i;
+        $client = new Client($token);
+        $room   = $client->room($roomId);
+
+        //echo 'Loading users ' . "\n";
+        //foreach ($room->users as $i => $gitter) {
+        //    echo ($i + 1) . ': ' . $gitter->username . "\n";
+        //    User::createFromGitter($gitter);
+        //}
+//
+        //echo "\n";
+
+        $i = 0;
+        foreach ($room->messages as $message) {
+            echo "\r" . 'Loading messages ' . ($i++);
 
             Message::createFromGitter($message);
         }

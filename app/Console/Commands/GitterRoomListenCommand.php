@@ -2,10 +2,12 @@
 namespace App\Console\Commands;
 
 use App\Gitter\Client;
-use App\Gitter\Models\Message;
+use App\Message;
+use App\User;
 use Illuminate\Console\Command;
 use React\EventLoop\Factory as EventLoop;
 use Illuminate\Contracts\Config\Repository;
+use App\Gitter\Models\Message as GitterMessage;
 
 /**
  * Class GitterRoomListenCommand
@@ -25,16 +27,24 @@ class GitterRoomListenCommand extends Command
 
     /**
      * @param Repository $config
+     * @throws \Exception
      */
     public function handle(Repository $config)
     {
-        $client = new Client($config->get('gitter.token'), EventLoop::create());
+        if (!($roomId = $config->get('gitter.rooms')[$this->argument('room')] ?? null)) {
+            throw new \Exception('Broken gitter room name');
+        }
 
-        $client->stream('5602e05e0fc9f982beb19cdc', function(Message $message) {
-            dd($message->toArray());
+        if (!($token = $config->get('gitter.token'))) {
+            throw new \Exception('Gitter token not defined');
+        }
+
+        $client = new Client($token);
+
+        $client->stream($roomId, function(GitterMessage $message) {
+            User::createFromGitter($message->fromUser);
+            Message::createFromGitter($message);
         });
-
-        //dd(iterator_to_array($client->rooms));
 
         $client->run();
     }
