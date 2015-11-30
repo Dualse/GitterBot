@@ -6,23 +6,22 @@ use App\Message;
 use App\Gitter\Client;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository;
-use App\Gitter\Models\Message as GitterMessage;
 
 /**
- * Class GitterRoomSyncCommand
+ * Class GitterRoomFillCommand
  * @package App\Console\Commands
  */
-class GitterRoomSyncCommand extends Command
+class GitterRoomFillCommand extends Command
 {
     /**
      * @var string
      */
-    protected $signature = 'gitter:sync {room}';
+    protected $signature = 'gitter:fill {room}';
 
     /**
      * @var string
      */
-    protected $description = 'Sync room messages';
+    protected $description = 'Parse all room data. Load users and messages';
 
     /**
      * @param Repository $config
@@ -38,27 +37,23 @@ class GitterRoomSyncCommand extends Command
             throw new \Exception('Gitter token not defined');
         }
 
-
         $client = new Client($token);
         $room   = $client->room($roomId);
 
-        $lastMessage = Message::last($roomId);
-        $messages = $client->request('room.messages')
-            ->where('roomId', $roomId)
-            ->with('limit', 100)
-            ->with('afterId', $lastMessage->gitter_id)
-            ->then(function($messages) use ($client, $room) {
-                foreach ($messages as $message) {
-                    yield new GitterMessage($client, $room, $message);
-                }
-            })
-            ->wait();
+        echo 'Loading users ' . "\n";
+        foreach ($room->users as $i => $gitter) {
+            echo ($i + 1) . ': ' . $gitter->username . "\n";
+            User::createFromGitter($gitter);
+        }
 
-        /** @var GitterMessage $message */
-        foreach ($messages as $i => $message) {
+        echo "\n";
+
+        $i = 0;
+        foreach ($room->messages as $message) {
             echo "\r" . 'Loading messages ' . ($i++);
-            User::createFromGitter($message->fromUser);
             Message::createFromGitter($message);
         }
+
+        $client->run();
     }
 }

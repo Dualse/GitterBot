@@ -78,6 +78,18 @@ class Message extends \Eloquent
     }
 
     /**
+     * @param $roomId
+     * @return Message|null
+     */
+    public static function last($roomId)
+    {
+        return static::query()
+            ->where('room_id', $roomId)
+            ->orderBy('created_at', 'desc')
+            ->first();
+    }
+
+    /**
      * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
      */
     public function mentions()

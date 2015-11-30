@@ -114,7 +114,10 @@ class Room extends AbstractModel
 
         return $query
             ->then(function($messages) {
-                return new Message($this->client, $this, $messages[0]);
+                if (count($messages)) {
+                    return new Message($this->client, $this, $messages[0]);
+                }
+                return null;
             })
             ->wait();
     }
