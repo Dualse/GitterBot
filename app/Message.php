@@ -36,7 +36,7 @@ class Message extends \Eloquent
     /**
      * @var array
      */
-    protected $fillable = ['gitter_id', 'user_id', 'room_id', 'text', 'html', 'urls'];
+    protected $fillable = ['gitter_id', 'user_id', 'room_id', 'text', 'html', 'urls', 'created_at', 'updated_at'];
 
     /**
      * @param GitterMessage $gitter
@@ -54,8 +54,8 @@ class Message extends \Eloquent
                 'text'          => $gitter->text,
                 'html'          => $gitter->html,
                 'urls'          => json_encode($gitter->urls),
-                'created_at'    => $gitter->sent,
-                'updated_at'    => $gitter->sent
+                'created_at'    => $gitter->sent->timestamp,
+                'updated_at'    => $gitter->editedAt->timestamp
             ]);
         };
 

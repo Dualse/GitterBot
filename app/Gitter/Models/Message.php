@@ -13,7 +13,8 @@ use Carbon\Carbon;
  * @property-read string $id
  * @property-read string $text
  * @property-read string $html
- * @property-read string $sent
+ * @property-read Carbon $sent
+ * @property-read Carbon $editedAt
  * @property-read User $fromUser
  * @property-read bool $unread
  * @property-read int $readBy
