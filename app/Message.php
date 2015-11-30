@@ -48,12 +48,14 @@ class Message extends \Eloquent
         $message = static::where(['gitter_id' => $gitter->id])->first();
         if (!$message) {
             $message = static::create([
-                'gitter_id' => $gitter->id,
-                'user_id'   => $gitter->fromUser->id,
-                'room_id'   => $gitter->room->id,
-                'text'      => $gitter->text,
-                'html'      => $gitter->html,
-                'urls'      => json_encode($gitter->urls)
+                'gitter_id'     => $gitter->id,
+                'user_id'       => $gitter->fromUser->id,
+                'room_id'       => $gitter->room->id,
+                'text'          => $gitter->text,
+                'html'          => $gitter->html,
+                'urls'          => json_encode($gitter->urls),
+                'created_at'    => $gitter->sent,
+                'updated_at'    => $gitter->sent
             ]);
         };
 
