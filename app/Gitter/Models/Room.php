@@ -42,7 +42,7 @@ class Room extends AbstractModel
 
     /**
      * @param bool $async
-     * @return mixed
+     * @return \Generator|User[]
      */
     public function users(bool $async = false)
     {
@@ -60,26 +60,63 @@ class Room extends AbstractModel
 
     /**
      * @param bool $async
+     * @return \Generator|Message[]
      */
     public function messages(bool $async = false)
     {
-        $page  = 0;
-        $chunk = 1000;
+        $chunk = 100;
+        $lastMessageId = $this->getLastMessage()->id;
 
-        while(true) {
+
+        $next = function() use (&$lastMessageId, $chunk) {
             yield from $this->client
                 ->request('room.messages')
                 ->where('roomId', $this->id)
                 ->with('limit', $chunk)
-                ->with('skip', $page * $chunk)
-                ->then(function ($messages) {
+                ->with('beforeId', $lastMessageId)
+                ->then(function ($messages) use (&$lastMessageId) {
+                    if (!count($messages)) { return []; }
+
                     foreach ($messages as $message) {
-                        yield new Message($this->client, $this, $message);
+                        yield ($messageObject = new Message($this->client, $this, $message));
                     }
+
+                    $lastMessageId = $messageObject->id;
                 })
                 ->wait();
-            $page++;
+        };
+
+        while($messages = $next()) {
+            $i = 0;
+
+            foreach ($messages as $message) {
+                yield $i++ => $message;
+            }
+
+            if (!$i) { break; }
         }
+    }
+
+    /**
+     * @param string|null $beforeId
+     * @return mixed
+     */
+    public function getLastMessage(string $beforeId = null)
+    {
+        $query = $this->client
+            ->request('room.messages')
+            ->where('roomId', $this->id)
+            ->with('limit', 1);
+
+        if ($beforeId !== null) {
+            $query = $query->with('beforeId', $beforeId);
+        }
+
+        return $query
+            ->then(function($messages) {
+                return new Message($this->client, $this, $messages[0]);
+            })
+            ->wait();
     }
 
     /**
