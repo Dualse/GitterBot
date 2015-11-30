@@ -22,7 +22,7 @@ class CreateMessagesTable extends Migration
             $t->timestamps(); // sent && editedAt
         });
 
-        Schema::create('messages_mentions', function(Blueprint $t) {
+        Schema::create('mentions', function(Blueprint $t) {
             $t->increments('id');
             $t->string('user_id', 30)->index();
             $t->string('message_id', 30)->index();

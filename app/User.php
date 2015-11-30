@@ -4,6 +4,7 @@ namespace App;
 use Carbon\Carbon;
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
+use App\Gitter\Models\User as GitterUser;
 use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Foundation\Auth\Access\Authorizable;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
@@ -37,6 +38,11 @@ class User extends Model implements
         CanResetPassword;
 
     /**
+     * @var string
+     */
+    protected $primaryKey = 'gitter_id';
+
+    /**
      * The database table used by the model.
      * @var string
      */
@@ -46,11 +52,30 @@ class User extends Model implements
      * The attributes that are mass assignable.
      * @var array
      */
-    protected $fillable = ['gitter_id', 'url', 'login', 'name', 'avatar'];
+    protected $fillable = ['gitter_id', 'url', 'login', 'name', 'avatar', 'email', 'password'];
 
     /**
      * The attributes excluded from the model's JSON form.
      * @var array
      */
     protected $hidden = ['password', 'remember_token'];
+
+    /**
+     * @param GitterUser $gitter
+     * @return static
+     */
+    public static function createFromGitter(GitterUser $gitter)
+    {
+        $user = static::firstOrNew(['gitter_id' => $gitter->id]);
+
+        $user->name      = $gitter->displayName;
+        $user->avatar    = $gitter->avatarUrlMedium;
+        $user->url       = $gitter->url;
+        $user->login     = $gitter->username;
+        $user->email     = null;
+        $user->password  = null;
+        $user->save();
+
+        return $user;
+    }
 }

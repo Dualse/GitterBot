@@ -2,6 +2,8 @@
 namespace App\Console\Commands;
 
 use App\Gitter\Client;
+use App\Message;
+use App\User;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository;
 
@@ -26,12 +28,20 @@ class GitterRoomSyncCommand extends Command
      */
     public function handle(Repository $config)
     {
-        // 52f9b90e5e986b0712ef6b9d
-
         $client = new Client($config->get('gitter.token'));
         $room   = $client->room('52f9b90e5e986b0712ef6b9d');
-        foreach ($room->messages as $messages) {
-            echo $messages->text . "\n";
+
+        foreach ($room->users as $i => $gitter) {
+            echo "\r" . 'Loading users ' . $i;
+            User::createFromGitter($gitter);
+        }
+
+        echo "\n";
+
+        foreach ($room->messages as $i => $message) {
+            echo "\r" . 'Loading messages ' . $i;
+
+            Message::createFromGitter($message);
         }
 
         $client->run();
