@@ -2,6 +2,8 @@
 namespace App;
 
 use Carbon\Carbon;
+use App\Gitter\Models\Room as GitterRoom;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use App\Gitter\Models\Message as GitterMessage;
 
@@ -20,6 +22,8 @@ use App\Gitter\Models\Message as GitterMessage;
  * @property Carbon $updated_at
  *
  * @property-read User[]|Collection $mentions
+ *
+ * @method Message room(GitterRoom $room)
  */
 class Message extends \Eloquent
 {
@@ -78,15 +82,13 @@ class Message extends \Eloquent
     }
 
     /**
-     * @param $roomId
-     * @return Message|null
+     * @param Builder $builder
+     * @param GitterRoom $room
+     * @return $this
      */
-    public static function last($roomId)
+    public static function scopeRoom(Builder $builder, GitterRoom $room)
     {
-        return static::query()
-            ->where('room_id', $roomId)
-            ->orderBy('created_at', 'desc')
-            ->first();
+        return $builder->where('room_id', $room->id);
     }
 
     /**

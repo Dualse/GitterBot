@@ -44,8 +44,8 @@ class GitterRoomSyncCommand extends Command
         $client = new Client($token);
         $room   = $client->room($roomId);
 
-        $chunk = $room->messages(false, function(Route $route) use ($roomId) {
-            return $route->with('afterId', Message::last($roomId)->gitter_id);
+        $chunk = $room->messages(false, function(Route $route) use ($room) {
+            return $route->with('afterId', Message::room($room)->latest()->first()->gitter_id);
         });
 
         echo 'Loading messages:' . "\n";

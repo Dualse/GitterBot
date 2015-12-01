@@ -16,6 +16,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\GitterRoomListenCommand::class,
         \App\Console\Commands\GitterRoomSyncCommand::class,
         \App\Console\Commands\GitterRoomFillCommand::class,
+        \App\Console\Commands\GitterRoomAnalyseCommand::class,
     ];
 
     /**
