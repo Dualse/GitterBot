@@ -33,6 +33,14 @@ abstract class AbstractModel implements Arrayable, Jsonable
     }
 
     /**
+     * @return Client
+     */
+    public function getClient()
+    {
+        return $this->client;
+    }
+
+    /**
      * @param $field
      * @return mixed|null
      */

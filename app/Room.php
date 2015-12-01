@@ -2,7 +2,7 @@
 namespace App;
 
 use App\Gitter\Models\Room as GitterRoom;
-
+use App\Support\Lazy\EloquentReader;
 /**
  * Class Room
  * @package App
@@ -24,16 +24,11 @@ class Room implements \IteratorAggregate
     }
 
     /**
-     * @param $page
-     * @return Message[]|array|\Illuminate\Database\Eloquent\Collection|static[]
+     * @return Gitter\Client
      */
-    public function getMessagesChunk($page)
+    public function getClient()
     {
-        return Message::room($this->room)
-            ->latest()
-            ->take(100)
-            ->skip($page * 100)
-            ->get();
+        return $this->room->getClient();
     }
 
     /**
@@ -41,14 +36,7 @@ class Room implements \IteratorAggregate
      */
     public function messages()
     {
-        $page = 0;
-        $chunk = $this->getMessagesChunk($page);
-        while ($chunk->count()) {
-            foreach ($chunk as $message) {
-                yield $message;
-            }
-            $chunk = $this->getMessagesChunk($page++);
-        }
+        return new EloquentReader(Message::room($this->room)->latest());
     }
 
     /**

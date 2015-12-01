@@ -22,6 +22,7 @@ use App\Gitter\Models\Message as GitterMessage;
  * @property Carbon $updated_at
  *
  * @property-read User[]|Collection $mentions
+ * @property-read User $user
  *
  * @method Message room(GitterRoom $room)
  */
@@ -97,6 +98,14 @@ class Message extends \Eloquent
     public function mentions()
     {
         return $this->belongsToMany(User::class, 'mentions', 'message_id', 'user_id');
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'gitter_id');
     }
 
     /**
