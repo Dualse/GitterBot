@@ -10,13 +10,17 @@ use Illuminate\Contracts\Config\Repository;
 /**
  * Class GitterRoomFillCommand
  * @package App\Console\Commands
+ *
+ * Полностью синхронизирует чат с базой данных,
+ * включая изменённые данные пользователей и сообщений
+ *
  */
 class GitterRoomFillCommand extends Command
 {
     /**
      * @var string
      */
-    protected $signature = 'gitter:fill {room}';
+    protected $signature = 'gitter:fill {room} {--users} {--messages}';
 
     /**
      * @var string
@@ -40,18 +44,26 @@ class GitterRoomFillCommand extends Command
         $client = new Client($token);
         $room   = $client->room($roomId);
 
-        echo 'Loading users ' . "\n";
-        foreach ($room->users as $i => $gitter) {
-            echo ($i + 1) . ': ' . $gitter->username . "\n";
-            User::createFromGitter($gitter);
+        if ($this->option('users') || !$this->option('messages')) {
+            echo 'Loading users:' . "\n";
+            foreach ($room->users as $i => $gitter) {
+                echo "\r" . $gitter->username . ' ' . ($i++);
+                User::createFromGitter($gitter);
+            }
+            echo "\n";
         }
 
-        echo "\n";
-
-        $i = 0;
-        foreach ($room->messages as $message) {
-            echo "\r" . 'Loading messages ' . ($i++);
-            Message::createFromGitter($message);
+        if ($this->option('messages') || !$this->option('users')) {
+            $chunk = $room->messages;
+            echo 'Loading messages:' . "\n";
+            while ($chunk->count()) {
+                $i = 0;
+                foreach ($chunk as $message) {
+                    echo "\r" . str_replace(["\r", "\n"], '', mb_substr($message->text, 0, 100)) . '... ' . ($i++);
+                    Message::createFromGitter($message);
+                }
+                $chunk = $chunk->prev();
+            }
         }
 
         $client->run();

@@ -30,7 +30,7 @@ use Carbon\Carbon;
  * === Relations ===
  *
  * @property-read \Generator|User[] $users
- * @property-read \Generator|Message[] $messages
+ * @property-read MessagesChunk|Message[] $messages
  *
  */
 class Room extends AbstractModel
@@ -60,66 +60,13 @@ class Room extends AbstractModel
 
     /**
      * @param bool $async
-     * @return \Generator|Message[]
+     * @param callable $query
+     * @return MessagesChunk|Message[]
      */
-    public function messages(bool $async = false)
+    public function messages(bool $async = false, callable $query = null)
     {
-        $chunk = 100;
-        $lastMessageId = $this->getLastMessage()->id;
-
-
-        $next = function() use (&$lastMessageId, $chunk) {
-            yield from $this->client
-                ->request('room.messages')
-                ->where('roomId', $this->id)
-                ->with('limit', $chunk)
-                ->with('beforeId', $lastMessageId)
-                ->then(function ($messages) use (&$lastMessageId) {
-                    if (!count($messages)) { return []; }
-
-                    foreach ($messages as $message) {
-                        yield ($messageObject = new Message($this->client, $this, $message));
-                    }
-
-                    $lastMessageId = $messageObject->id;
-                })
-                ->wait();
-        };
-
-        while($messages = $next()) {
-            $i = 0;
-
-            foreach ($messages as $message) {
-                yield $i++ => $message;
-            }
-
-            if (!$i) { break; }
-        }
-    }
-
-    /**
-     * @param string|null $beforeId
-     * @return mixed
-     */
-    public function getLastMessage(string $beforeId = null)
-    {
-        $query = $this->client
-            ->request('room.messages')
-            ->where('roomId', $this->id)
-            ->with('limit', 1);
-
-        if ($beforeId !== null) {
-            $query = $query->with('beforeId', $beforeId);
-        }
-
-        return $query
-            ->then(function($messages) {
-                if (count($messages)) {
-                    return new Message($this->client, $this, $messages[0]);
-                }
-                return null;
-            })
-            ->wait();
+        $chunk = new MessagesChunk($this->client, $this);
+        return $chunk->query($query, $async);
     }
 
     /**
