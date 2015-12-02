@@ -49,6 +49,14 @@ class MessageFactory
             return $message;
         }
 
+        $createdAt = (new Carbon($gitter->sent))
+            ->setTimezone('Europe/Moscow')
+            ->timestamp;
+
+        $updatedAt = (new Carbon($gitter->editedAt ?? date('Y-m-d H:i:s', 0)))
+            ->setTimezone('Europe/Moscow')
+            ->timestamp;
+
         return [
             'gitter_id'  => $gitter->id,
             'user_id'    => $gitter->fromUser->id,
@@ -56,14 +64,8 @@ class MessageFactory
             'text'       => $gitter->text,
             'html'       => $gitter->html,
             'urls'       => json_encode($gitter->urls),
-            'created_at' => (new Carbon($gitter->sent))
-                ->setTimezone('Europe/Moscow')
-                ->timestamp,
-            'updated_at' => (new Carbon(
-                $gitter->editedAt ?? date('Y-m-d H:i:s', 0)
-            ))
-                ->setTimezone('Europe/Moscow')
-                ->timestamp
+            'created_at' => $createdAt,
+            'updated_at' => $updatedAt
         ];
     }
 }

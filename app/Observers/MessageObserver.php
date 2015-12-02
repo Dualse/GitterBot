@@ -2,6 +2,7 @@
 namespace App\Observers;
 
 use App\Gitter\Client;
+use App\Mention;
 use App\Message;
 
 /**
@@ -32,5 +33,14 @@ class MessageObserver
                 })
                 ->wait();
         }
+    }
+
+    /**
+     * @param Message $message
+     * @throws \Exception
+     */
+    public function deleted(Message $message)
+    {
+        Mention::where('message_id', $message->gitter_id)->delete();
     }
 }
