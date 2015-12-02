@@ -35,21 +35,21 @@ class PingPongMiddleware implements MiddlewareInterface
      */
     public function handle(Message $message, \Closure $next)
     {
-        if ($message->text->match('timer')) {
-            return 1;
+        if ($message->text->contains('@KarmaBot', true)) {
+            return '_Отстань :D_';
         }
 
-        if ($message->text->match('start')) {
+        if ($message->text->contains('как ты это делаешь?')) {
             /** @var Message $message */
             $answer = Message::own()
-                ->forRoom($this->room->id)
+                ->forRoom($this->room)
                 ->orderBy('created_at', 'desc')->first();
             $number   = (int)(string)$answer->text;
 
             /** @var Client $client */
             $client = app(Client::class);
             $client->setInterval(function(Timer $timer) use (&$number, $answer, $client) {
-                $t = 'я печатаю сообщеньку =)';
+                $t = 'Это очень чёрная магия, Карл +)';
                 if ($number <= mb_strlen($t)) {
                     $answer->text = mb_substr($t, 0, ++$number);
                     $answer->save();
