@@ -58,6 +58,19 @@ class Text implements \JsonSerializable
     }
 
     /**
+     * @param $content
+     * @param $ignoreCase
+     * @return string
+     */
+    public function contains($content, $ignoreCase = false)
+    {
+        if ($ignoreCase) {
+            return mb_strstr(mb_strtolower($this->content), mb_strtolower($content));
+        }
+        return mb_strstr($this->content, $content);
+    }
+
+    /**
      * @return string
      */
     public function words()
