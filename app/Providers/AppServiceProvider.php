@@ -2,6 +2,11 @@
 
 namespace App\Providers;
 
+use App\Factories\MessageFactory;
+use App\Factories\UserFactory;
+use App\Message;
+use App\Observers\MessageObserver;
+use App\User;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -13,7 +18,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
+        Message::factoryRegister(MessageFactory::class);
+        User::factoryRegister(UserFactory::class);
+
+        Message::observe(MessageObserver::class);
+
     }
 
     /**

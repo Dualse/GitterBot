@@ -36,9 +36,6 @@ class Message extends AbstractModel
      */
     public function __construct(Client $client, Room $room, \stdClass $data)
     {
-        $data->sent     = (new Carbon($data->sent))->setTimezone('Europe/Moscow');
-        $data->editedAt = (new Carbon($data->editedAt ?? date('Y-m-d H:i:s', 0)))->setTimezone('Europe/Moscow');
-
         $data->fromUser = new User($client, $data->fromUser);
         $data->room     = $room;
 

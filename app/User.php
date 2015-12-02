@@ -1,6 +1,7 @@
 <?php
 namespace App;
 
+use App\Support\EloquentFactoryTrait;
 use Carbon\Carbon;
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
@@ -35,7 +36,8 @@ class User extends Model implements
 {
     use Authenticatable,
         Authorizable,
-        CanResetPassword;
+        CanResetPassword,
+        EloquentFactoryTrait;
 
     /**
      * @var string
@@ -59,23 +61,4 @@ class User extends Model implements
      * @var array
      */
     protected $hidden = ['password', 'remember_token'];
-
-    /**
-     * @param GitterUser $gitter
-     * @return static
-     */
-    public static function createFromGitter(GitterUser $gitter)
-    {
-        $user = static::firstOrNew(['gitter_id' => $gitter->id]);
-
-        $user->name      = $gitter->displayName;
-        $user->avatar    = $gitter->avatarUrlMedium;
-        $user->url       = $gitter->url;
-        $user->login     = $gitter->username;
-        $user->email     = null;
-        $user->password  = null;
-        $user->save();
-
-        return $user;
-    }
 }

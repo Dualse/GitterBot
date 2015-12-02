@@ -1,13 +1,12 @@
 <?php
 namespace App\Console\Commands;
 
-use App\Bot\Middleware\PingPongEngMiddleware;
-use App\Bot\Middleware\PingPongMiddleware;
 use App\User;
 use App\Message;
 use App\Gitter\Client;
 use Illuminate\Console\Command;
 use Illuminate\Container\Container;
+use App\Bot\Middleware\PingPongMiddleware;
 use Illuminate\Contracts\Config\Repository;
 use App\Gitter\Models\Message as GitterMessage;
 use App\Console\Commands\Support\CommandValidatorTrait;
@@ -16,6 +15,8 @@ use App\Gitter\Extensions\Middleware\Repository as MiddlewareExtension;
 /**
  * Class GitterRoomListenCommand
  * @package App\Console\Commands
+ *
+ * Прослушивание сообщений требуемой комнаты
  */
 class GitterRoomListenCommand extends Command
 {
@@ -38,9 +39,10 @@ class GitterRoomListenCommand extends Command
      */
     public function handle(Container $app, Repository $config)
     {
-        // Create Gitter client
         $token  = $this->getApiToken($config);
-        $client = (new Client($token))->register($app);
+
+        // Create a Gitter API client
+        $client = (new Client($token, $config->get('app.debug')))->register($app);
 
         // Get room information
         $room   = $client->room($this->getRoomId($config));
@@ -54,12 +56,14 @@ class GitterRoomListenCommand extends Command
 
         // Start message event listener
         $client->stream($room, function(GitterMessage $message) use ($middleware) {
-            User::createFromGitter($message->fromUser);
-            $instance = Message::createFromGitter($message);
+            User::factoryResolve($message->fromUser)->save();
+            $instance = Message::factoryResolve($message);
+            $instance->save();
 
             $middleware->fire($instance);
 
         }, function(\Exception $e) {
+
             var_dump(get_class($e), $e->getMessage(), $e->getTraceAsString());
         });
 

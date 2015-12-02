@@ -1,15 +1,15 @@
 <?php
 namespace App\Console\Commands;
 
-use App\Console\Commands\Support\CommandValidatorTrait;
 use App\User;
 use App\Message;
 use App\Gitter\Client;
 use App\Gitter\Http\Route;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository;
-use App\Gitter\Models\Message as GitterMessage;
 use Illuminate\Contracts\Container\Container;
+use App\Gitter\Models\Message as GitterMessage;
+use App\Console\Commands\Support\CommandValidatorTrait;
 
 /**
  * Class GitterRoomSyncCommand
@@ -39,24 +39,40 @@ class GitterRoomSyncCommand extends Command
     public function handle(Container $app, Repository $config)
     {
         $token = $this->getApiToken($config);
-        $client = (new Client($token))->register($app);
+
+        // Creating a new Gitter API Client
+        $client = (new Client($token, $config->get('app.debug')))->register($app);
+
+        // Creating room from request argument
         $room   = $client->room($this->getRoomId($config));
 
+        // Get message chunk for most recent message
         $chunk = $room->messages(false, function(Route $route) use ($room) {
-            return $route->with('afterId', Message::forRoom($room)->latest()->first()->gitter_id);
+            return $route->with('afterId',
+                Message::query()
+                    ->forRoom($room)
+                    ->latest()
+                    ->first()
+                    ->gitter_id
+            );
         });
 
 
-
-        echo 'Loading messages:' . "\n";
+        $this->info('Loading messages:');
         while ($chunk->count()) {
             $i = 0;
             /** @var GitterMessage $message */
             foreach ($chunk as $message) {
-                echo "\r" . str_replace(["\r", "\n"], '', mb_substr($message->text, 0, 100)) . '... ' . ($i++);
-                Message::createFromGitter($message);
-                User::createFromGitter($message->fromUser);
+                $info = str_replace(["\r", "\n"], '', mb_substr($message->text, 0, 100)) . '... ';
+                $this->output->write("\r" . $info . ($i++));
+
+                // Save new message
+                Message::factoryResolve($message)->save();
+
+                // Save message user
+                User::factoryResolve($message->fromUser)->save();
             }
+
             $chunk = $chunk->next();
         }
 

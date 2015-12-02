@@ -14,6 +14,7 @@ use Illuminate\Contracts\Container\Container;
 use React\EventLoop\LoopInterface;
 use GuzzleHttp\Promise\PromiseInterface;
 use React\EventLoop\Factory as EventLoop;
+use React\EventLoop\Timer\Timer;
 
 
 /**
@@ -27,6 +28,13 @@ use React\EventLoop\Factory as EventLoop;
  */
 class Client
 {
+    /**
+     * Cached rooms instances
+     *
+     * @var array
+     */
+    protected $storageRooms = [];
+
     /**
      * @var RouteStorage
      */
@@ -48,11 +56,18 @@ class Client
     protected $user;
 
     /**
+     * @var bool
+     */
+    protected $debug = false;
+
+    /**
      * Client constructor.
      * @param string $token
+     * @param bool $debug
      */
-    public function __construct(string $token)
+    public function __construct(string $token, bool $debug = false)
     {
+        $this->debug = $debug;
         $this->token = $token;
         $this->loop  = EventLoop::create();
 
@@ -65,9 +80,21 @@ class Client
     }
 
     /**
+     * @param Route $route
+     * @return $this
+     */
+    public function logRoute(Route $route)
+    {
+        if ($this->debug) {
+            echo "\n" . ' --> ' . $route->get() . "\n";
+        }
+        return $this;
+    }
+
+    /**
      * @param $timer
      */
-    public function removeTimer($timer)
+    public function cancelTimer(Timer $timer)
     {
         $this->loop->cancelTimer($timer);
     }
@@ -127,6 +154,8 @@ class Client
             ->get('stream.messages')
             ->where('roomId', $room->id);
 
+        $this->logRoute($route);
+
         return (new Stream($this, $this->loop, $route))
             ->fetch(function($data) use ($fulfilled, $rejected, $room) {
                 // Parse JSON response
@@ -172,9 +201,8 @@ class Client
      */
     public function request(string $routeName)
     {
-        $route = $this->routes->get($routeName);
 
-        return new class($route, $this->token) extends Route
+        return new class($this, $this->routes->get($routeName), $this->token) extends Route
         {
             /**
              * @var string
@@ -182,13 +210,20 @@ class Client
             protected $token;
 
             /**
-             * class@anonymous constructor.
+             * @var Client
+             */
+            protected $client;
+
+            /**
+             * @constructor
+             * @param Client $client
              * @param Route $route
              * @param string $accessToken
              */
-            final public function __construct(Route $route, string $accessToken)
+            final public function __construct(Client $client, Route $route, string $accessToken)
             {
                 parent::__construct($route->getUrl(), $route->getArguments());
+                $this->client = $client;
                 $this->token = $accessToken;
             }
 
@@ -208,6 +243,8 @@ class Client
                 if (strtoupper($arguments['method']) !== 'GET') {
                     $arguments['headers']['Authorization'] = 'Bearer ' . $this->token;
                 }
+
+                $this->client->logRoute($this);
 
                 return Request::fetch($this->get(), $arguments)
                     ->then(function (Response $response) {
@@ -239,18 +276,20 @@ class Client
 
     /**
      * @param $roomId
-     * @param bool $async
      * @return PromiseInterface|Room
      */
-    public function room($roomId, $async = false)
+    public function room($roomId)
     {
-        $result = $this->request('room')
-            ->where('roomId', $roomId)
-            ->then(function ($room) {
-                return new Room($this, $room);
-            });
+        if (!array_key_exists($roomId, $this->storageRooms)) {
+            $this->storageRooms[$roomId] = $this->request('room')
+                ->where('roomId', $roomId)
+                ->then(function ($room) {
+                    return new Room($this, $room);
+                })
+                ->wait();
+        }
 
-        return $async ? $result : $result->wait();
+        return $this->storageRooms[$roomId];
     }
 
     /**

@@ -1,6 +1,7 @@
 <?php
 namespace App;
 
+use App\Support\EloquentFactoryTrait;
 use Carbon\Carbon;
 use App\Gitter\Client;
 use App\Gitter\Models\User as GitterUser;
@@ -30,6 +31,8 @@ use App\Gitter\Models\Message as GitterMessage;
  */
 class Message extends \Eloquent
 {
+    use EloquentFactoryTrait;
+
     /**
      * @var string
      */
@@ -44,71 +47,6 @@ class Message extends \Eloquent
      * @var array
      */
     protected $fillable = ['gitter_id', 'user_id', 'room_id', 'text', 'html', 'urls', 'created_at', 'updated_at'];
-
-    public static function boot()
-    {
-        parent::boot();
-
-        static::saving(function(Message $message) {
-            $before = $message->getOriginal('text');
-            $after  = $message->getAttribute('text');
-
-            if ($before && $before !== $after) {
-                $message->text = app(Client::class)
-                    ->request('message.update')
-                    ->where('roomId', $message->room_id)
-                    ->where('messageId', $message->gitter_id)
-                    ->fetch([
-                        'method' => 'PUT',
-                        'body'   => ['text' => (string)$message->text]
-                    ])
-                    ->then(function ($d) {
-                        return $d->text;
-                    })
-                    ->wait();
-            }
-        });
-    }
-
-
-    /**
-     * @param GitterMessage $gitter
-     * @return static
-     */
-    public static function createFromGitter(GitterMessage $gitter)
-    {
-        /** @var Message $message */
-        $message = static::where(['gitter_id' => $gitter->id])->first();
-        if (!$message) {
-            $message = static::create([
-                'gitter_id'     => $gitter->id,
-                'user_id'       => $gitter->fromUser->id,
-                'room_id'       => $gitter->room->id,
-                'text'          => $gitter->text,
-                'html'          => $gitter->html,
-                'urls'          => json_encode($gitter->urls),
-                'created_at'    => $gitter->sent->timestamp,
-                'updated_at'    => $gitter->editedAt->timestamp
-            ]);
-        };
-
-
-        /** @var {$userId}[] */
-        if ($gitter->mentions !== []) {
-            foreach ($gitter->mentions as $mention) {
-                if (!property_exists($mention, 'userId')) {
-                    continue;
-                }
-
-                Mention::firstOrCreate([
-                    'user_id'    => $mention->userId,
-                    'message_id' => $gitter->id
-                ]);
-            }
-        }
-
-        return $message;
-    }
 
     /**
      * @param Builder $builder

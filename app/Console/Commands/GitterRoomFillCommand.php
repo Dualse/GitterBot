@@ -1,13 +1,14 @@
 <?php
 namespace App\Console\Commands;
 
-use App\Console\Commands\Support\CommandValidatorTrait;
 use App\User;
 use App\Message;
 use App\Gitter\Client;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Container\Container;
+use App\Gitter\Models\Message as GitterMessage;
+use App\Console\Commands\Support\CommandValidatorTrait;
 
 /**
  * Class GitterRoomFillCommand
@@ -15,7 +16,6 @@ use Illuminate\Contracts\Container\Container;
  *
  * Полностью синхронизирует чат с базой данных,
  * включая изменённые данные пользователей и сообщений
- *
  */
 class GitterRoomFillCommand extends Command
 {
@@ -38,37 +38,50 @@ class GitterRoomFillCommand extends Command
      */
     public function handle(Container $app, Repository $config)
     {
+        // Take API Token
         $token = $this->getApiToken($config);
 
-        $client = (new Client($token))->register($app);
+        // Create a new API Gitter client
+        $client = (new Client($token, $config->get('app.debug')))->register($app);
+
+        // Resolve room from input argument
         $room   = $client->room($this->getRoomId($config));
 
-
-
+        // For option `--users` (or no options)
         if ($this->option('users') || !$this->option('messages')) {
-            echo 'Loading users:' . "\n";
+
+            $this->info('Loading users:');
             foreach ($room->users as $i => $gitter) {
-                echo "\r" . $gitter->username . ' ' . ($i++);
-                User::createFromGitter($gitter);
+                $this->output->write("\r" . $gitter->username . ' ' . ($i++));
+
+                // Create a new user
+                User::factoryResolve($gitter)->save();
             }
-            echo "\n";
+
+            $this->output->newLine();
         }
 
 
-
+        // For option `--messages` (or no options)
         if ($this->option('messages') || !$this->option('users')) {
+            $this->info('Loading messages:');
+
             $chunk = $room->messages;
-            echo 'Loading messages:' . "\n";
             while ($chunk->count()) {
                 $i = 0;
+
+                /** @var \App\Gitter\Models\Message $message */
                 foreach ($chunk as $message) {
-                    echo "\r" . str_replace(["\r", "\n"], '', mb_substr($message->text, 0, 100)) . '... ' . ($i++);
-                    Message::createFromGitter($message);
+                    $info = str_replace(["\r", "\n"], '', mb_substr($message->text, 0, 100)) . '... ';
+                    $this->output->write("\r" . $info . ($i++));
+
+                    // Create a new message
+                    Message::factoryResolve($message)->save();
                 }
+
                 $chunk = $chunk->prev();
             }
         }
-
 
         $client->run();
     }
