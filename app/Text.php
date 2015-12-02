@@ -60,6 +60,36 @@ class Text implements \JsonSerializable
     /**
      * @return string
      */
+    public function words()
+    {
+        $content = $this->content;
+
+        $content = preg_replace('/@[a-z0-9_\-]+/iu', '', $content);
+        $content = preg_replace('/[^\s\w]/iu', '', $content);
+        $content = str_replace(["\n", "\r"], '', $content);
+
+        return new Text(trim($content));
+    }
+
+    /**
+     * @return string
+     */
+    public function toLowerCase()
+    {
+        return new Text(mb_strtolower($this->content));
+    }
+
+    /**
+     * @return string
+     */
+    public function toUpperCase()
+    {
+        return new Text(mb_strtoupper($this->content));
+    }
+
+    /**
+     * @return string
+     */
     public function __toString()
     {
         return (string)$this->content;
