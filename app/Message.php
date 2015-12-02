@@ -2,6 +2,8 @@
 namespace App;
 
 use Carbon\Carbon;
+use App\Gitter\Client;
+use App\Gitter\Models\User as GitterUser;
 use App\Gitter\Models\Room as GitterRoom;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -15,7 +17,7 @@ use App\Gitter\Models\Message as GitterMessage;
  * @property string $gitter_id
  * @property string $user_id
  * @property string $room_id
- * @property string $text
+ * @property Text $text
  * @property string $html
  * @property array $urls
  * @property Carbon $created_at
@@ -24,7 +26,7 @@ use App\Gitter\Models\Message as GitterMessage;
  * @property-read User[]|Collection $mentions
  * @property-read User $user
  *
- * @method Message room(GitterRoom $room)
+ * @method Message forRoom(GitterRoom $room)
  */
 class Message extends \Eloquent
 {
@@ -42,6 +44,32 @@ class Message extends \Eloquent
      * @var array
      */
     protected $fillable = ['gitter_id', 'user_id', 'room_id', 'text', 'html', 'urls', 'created_at', 'updated_at'];
+
+    public static function boot()
+    {
+        parent::boot();
+
+        static::saving(function(Message $message) {
+            $before = $message->getOriginal('text');
+            $after  = $message->getAttribute('text');
+
+            if ($before && $before !== $after) {
+                $message->text = app(Client::class)
+                    ->request('message.update')
+                    ->where('roomId', $message->room_id)
+                    ->where('messageId', $message->gitter_id)
+                    ->fetch([
+                        'method' => 'PUT',
+                        'body'   => ['text' => (string)$message->text]
+                    ])
+                    ->then(function ($d) {
+                        return $d->text;
+                    })
+                    ->wait();
+            }
+        });
+    }
+
 
     /**
      * @param GitterMessage $gitter
@@ -84,10 +112,21 @@ class Message extends \Eloquent
 
     /**
      * @param Builder $builder
+     * @return $this
+     */
+    public static function scopeOwn(Builder $builder)
+    {
+        /** @var GitterUser $user */
+        $user = app(Client::class)->getUser();
+        return $builder->where('user_id', $user->id);
+    }
+
+    /**
+     * @param Builder $builder
      * @param GitterRoom $room
      * @return $this
      */
-    public static function scopeRoom(Builder $builder, GitterRoom $room)
+    public static function scopeForRoom(Builder $builder, GitterRoom $room)
     {
         return $builder->where('room_id', $room->id);
     }
@@ -106,6 +145,15 @@ class Message extends \Eloquent
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id', 'gitter_id');
+    }
+
+    /**
+     * @param $content
+     * @return Text
+     */
+    public function getTextAttribute($content)
+    {
+        return new Text($content);
     }
 
     /**

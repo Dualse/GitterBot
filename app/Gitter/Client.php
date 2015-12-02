@@ -10,6 +10,7 @@ use App\Gitter\Http\Request;
 use App\Gitter\Http\Response;
 use App\Gitter\Models\Message;
 use App\Gitter\Http\RouteStorage;
+use Illuminate\Contracts\Container\Container;
 use React\EventLoop\LoopInterface;
 use GuzzleHttp\Promise\PromiseInterface;
 use React\EventLoop\Factory as EventLoop;
@@ -42,6 +43,11 @@ class Client
     protected $loop;
 
     /**
+     * @var User|PromiseInterface
+     */
+    protected $user;
+
+    /**
      * Client constructor.
      * @param string $token
      */
@@ -54,6 +60,54 @@ class Client
             ->resolver(function (Route $route) {
                 return $route->with('access_token', $this->token);
             });
+
+        $this->user = $this->user();
+    }
+
+    /**
+     * @param $timer
+     */
+    public function removeTimer($timer)
+    {
+        $this->loop->cancelTimer($timer);
+    }
+
+    /**
+     * @param callable $callback
+     * @param int $timer
+     * @return \React\EventLoop\Timer\Timer|\React\EventLoop\Timer\TimerInterface
+     */
+    public function setInterval(callable $callback, int $timer = 1)
+    {
+        return $this->loop->addPeriodicTimer($timer, $callback);
+    }
+
+    /**
+     * @param callable $callback
+     * @param int $timer
+     * @return \React\EventLoop\Timer\Timer|\React\EventLoop\Timer\TimerInterface
+     */
+    public function setTimeout(callable $callback, int $timer = 1)
+    {
+        return $this->loop->addTimer($timer, $callback);
+    }
+
+    /**
+     * @return User|PromiseInterface
+     */
+    public function getUser()
+    {
+        return $this->user;
+    }
+
+    /**
+     * @param Container $container
+     * @return $this
+     */
+    public function register(Container $container)
+    {
+        $container->singleton(static::class, function() { return $this; });
+        return $this;
     }
 
     /**

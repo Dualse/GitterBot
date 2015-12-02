@@ -40,7 +40,7 @@ class GitterRoomListenCommand extends Command
     {
         // Create Gitter client
         $token  = $this->getApiToken($config);
-        $client = new Client($token);
+        $client = (new Client($token))->register($app);
 
         // Get room information
         $room   = $client->room($this->getRoomId($config));

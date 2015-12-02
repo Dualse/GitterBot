@@ -44,26 +44,5 @@ class Message extends AbstractModel
 
         parent::__construct($client, $data);
     }
-
-    /**
-     * @param $field
-     * @param $value
-     * @return null
-     */
-    public function __set($field, $value)
-    {
-        if ($field === 'text') {
-            return $this->client
-                ->request('message.update')
-                ->where('roomId', $this->room->id)
-                ->where('messageId', $this->id)
-                ->fetch([
-                    'method'    => 'PUT',
-                    'body'      => [ 'text' => $value ]
-                ])
-                ->wait();
-        }
-        return null;
-    }
 }
 

@@ -72,7 +72,7 @@ class Room extends AbstractModel
     /**
      * @param string $message
      * @param bool $async
-     * @return mixed
+     * @return mixed|Message
      */
     public function say(string $message, bool $async = false)
     {

@@ -7,6 +7,7 @@ use App\Message;
 use App\Gitter\Client;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository;
+use Illuminate\Contracts\Container\Container;
 
 /**
  * Class GitterRoomFillCommand
@@ -31,14 +32,15 @@ class GitterRoomFillCommand extends Command
     protected $description = 'Parse all room data. Load users and messages';
 
     /**
+     * @param Container $app
      * @param Repository $config
      * @throws \Exception
      */
-    public function handle(Repository $config)
+    public function handle(Container $app, Repository $config)
     {
         $token = $this->getApiToken($config);
 
-        $client = new Client($token);
+        $client = (new Client($token))->register($app);
         $room   = $client->room($this->getRoomId($config));
 
 
