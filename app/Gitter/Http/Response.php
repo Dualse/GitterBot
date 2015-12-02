@@ -14,12 +14,22 @@ class Response
      * @var int
      */
     public $status;
+
+    /**
+     * @var null|string
+     */
     public $statusText;
+
+    /**
+     * @var string|string
+     */
     public $url;
+
     /**
      * @var array
      */
     public $headers = [];
+
     /**
      * @var GuzzleResponse
      */

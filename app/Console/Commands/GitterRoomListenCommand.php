@@ -1,13 +1,17 @@
 <?php
 namespace App\Console\Commands;
 
-use App\Gitter\Client;
-use App\Message;
+use App\Bot\Middleware\PingPongEngMiddleware;
+use App\Bot\Middleware\PingPongMiddleware;
 use App\User;
+use App\Message;
+use App\Gitter\Client;
 use Illuminate\Console\Command;
-use React\EventLoop\Factory as EventLoop;
+use Illuminate\Container\Container;
 use Illuminate\Contracts\Config\Repository;
 use App\Gitter\Models\Message as GitterMessage;
+use App\Console\Commands\Support\CommandValidatorTrait;
+use App\Gitter\Extensions\Middleware\Repository as MiddlewareExtension;
 
 /**
  * Class GitterRoomListenCommand
@@ -15,6 +19,8 @@ use App\Gitter\Models\Message as GitterMessage;
  */
 class GitterRoomListenCommand extends Command
 {
+    use CommandValidatorTrait;
+
     /**
      * @var string
      */
@@ -26,26 +32,38 @@ class GitterRoomListenCommand extends Command
     protected $description = 'Listen gitter room';
 
     /**
+     * @param Container $app
      * @param Repository $config
      * @throws \Exception
      */
-    public function handle(Repository $config)
+    public function handle(Container $app, Repository $config)
     {
-        if (!($roomId = $config->get('gitter.rooms')[$this->argument('room')] ?? null)) {
-            throw new \Exception('Broken gitter room name');
-        }
-
-        if (!($token = $config->get('gitter.token'))) {
-            throw new \Exception('Gitter token not defined');
-        }
-
+        // Create Gitter client
+        $token  = $this->getApiToken($config);
         $client = new Client($token);
 
-        $client->stream($roomId, function(GitterMessage $message) {
+        // Get room information
+        $room   = $client->room($this->getRoomId($config));
+
+
+        // Create middleware extension
+        /** @var MiddlewareExtension $middleware */
+        $middleware = $app->make(MiddlewareExtension::class, [ 'room' => $room ]);
+        $middleware->register(PingPongMiddleware::class);
+
+
+        // Start message event listener
+        $client->stream($room, function(GitterMessage $message) use ($middleware) {
             User::createFromGitter($message->fromUser);
-            Message::createFromGitter($message);
+            $instance = Message::createFromGitter($message);
+
+            $middleware->fire($instance);
+
+        }, function(\Exception $e) {
+            var_dump(get_class($e), $e->getMessage(), $e->getTraceAsString());
         });
 
+        // Start event loop
         $client->run();
     }
 }

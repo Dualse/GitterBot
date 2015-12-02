@@ -57,18 +57,21 @@ class Client
     }
 
     /**
-     * @param string $roomId
+     * @param Room $room
      * @param callable|null $fulfilled
      * @param callable|null $rejected
      * @return Stream
      */
-    public function stream(string $roomId, callable $fulfilled = null, callable $rejected = null)
+    public function stream(Room $room, callable $fulfilled = null, callable $rejected = null)
     {
-        $room  = $this->room($roomId);
+        if ($fulfilled === null) { $fulfilled = function() {}; }
+        if ($rejected === null)  { $rejected  = function() {}; }
+
+        $room  = $this->room($room->id);
 
         $route = $this->routes
             ->get('stream.messages')
-            ->where('roomId', $roomId);
+            ->where('roomId', $room->id);
 
         return (new Stream($this, $this->loop, $route))
             ->fetch(function($data) use ($fulfilled, $rejected, $room) {

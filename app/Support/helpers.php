@@ -8,6 +8,10 @@ use App\Support\Lazy\AwaitProxy;
  */
 function await($object, $callback = null)
 {
+    if ($object instanceof Generator) {
+        return iterator_to_array($object);
+    }
+
     if ($callback === null) {
         return $object->wait();
     }

@@ -1,10 +1,11 @@
 <?php
 namespace App\Console\Commands;
 
-use App\Gitter\Http\Route;
+use App\Console\Commands\Support\CommandValidatorTrait;
 use App\User;
 use App\Message;
 use App\Gitter\Client;
+use App\Gitter\Http\Route;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository;
 use App\Gitter\Models\Message as GitterMessage;
@@ -17,6 +18,8 @@ use App\Gitter\Models\Message as GitterMessage;
  */
 class GitterRoomSyncCommand extends Command
 {
+    use CommandValidatorTrait;
+
     /**
      * @var string
      */
@@ -33,24 +36,20 @@ class GitterRoomSyncCommand extends Command
      */
     public function handle(Repository $config)
     {
-        if (!($roomId = $config->get('gitter.rooms')[$this->argument('room')] ?? null)) {
-            throw new \Exception('Broken gitter room name');
-        }
-
-        if (!($token = $config->get('gitter.token'))) {
-            throw new \Exception('Gitter token not defined');
-        }
-
+        $token = $this->getApiToken($config);
         $client = new Client($token);
-        $room   = $client->room($roomId);
+        $room   = $client->room($this->getRoomId($config));
 
         $chunk = $room->messages(false, function(Route $route) use ($room) {
             return $route->with('afterId', Message::room($room)->latest()->first()->gitter_id);
         });
 
+
+
         echo 'Loading messages:' . "\n";
         while ($chunk->count()) {
             $i = 0;
+            /** @var GitterMessage $message */
             foreach ($chunk as $message) {
                 echo "\r" . str_replace(["\r", "\n"], '', mb_substr($message->text, 0, 100)) . '... ' . ($i++);
                 Message::createFromGitter($message);

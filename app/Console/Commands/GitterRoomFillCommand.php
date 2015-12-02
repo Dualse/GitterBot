@@ -1,6 +1,7 @@
 <?php
 namespace App\Console\Commands;
 
+use App\Console\Commands\Support\CommandValidatorTrait;
 use App\User;
 use App\Message;
 use App\Gitter\Client;
@@ -17,6 +18,8 @@ use Illuminate\Contracts\Config\Repository;
  */
 class GitterRoomFillCommand extends Command
 {
+    use CommandValidatorTrait;
+
     /**
      * @var string
      */
@@ -33,16 +36,12 @@ class GitterRoomFillCommand extends Command
      */
     public function handle(Repository $config)
     {
-        if (!($roomId = $config->get('gitter.rooms')[$this->argument('room')] ?? null)) {
-            throw new \Exception('Broken gitter room name');
-        }
-
-        if (!($token = $config->get('gitter.token'))) {
-            throw new \Exception('Gitter token not defined');
-        }
+        $token = $this->getApiToken($config);
 
         $client = new Client($token);
-        $room   = $client->room($roomId);
+        $room   = $client->room($this->getRoomId($config));
+
+
 
         if ($this->option('users') || !$this->option('messages')) {
             echo 'Loading users:' . "\n";
@@ -52,6 +51,8 @@ class GitterRoomFillCommand extends Command
             }
             echo "\n";
         }
+
+
 
         if ($this->option('messages') || !$this->option('users')) {
             $chunk = $room->messages;
@@ -65,6 +66,7 @@ class GitterRoomFillCommand extends Command
                 $chunk = $chunk->prev();
             }
         }
+
 
         $client->run();
     }
