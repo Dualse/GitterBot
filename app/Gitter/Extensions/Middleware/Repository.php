@@ -2,10 +2,9 @@
 namespace App\Gitter\Extensions\Middleware;
 
 
+use App\Room;
 use App\Message;
-use App\Gitter\Models\Room;
 use Illuminate\Contracts\Container\Container;
-use Illuminate\Contracts\Support\Arrayable;
 
 /**
  * Class Repository
@@ -60,7 +59,7 @@ class Repository
             $response = new Response($this->fireMiddleware(0, $message));
 
             if (!$response->isEmpty()) {
-                $this->room->say($response->getContent());
+                $this->room->write($response->getContent());
             }
         }
     }

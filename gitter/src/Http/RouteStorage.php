@@ -1,9 +1,9 @@
 <?php
-namespace App\Gitter\Http;
+namespace Gitter\Http;
 
 /**
  * Class RouteStorage
- * @package App\Gitter\Http
+ * @package Gitter\Http
  */
 class RouteStorage
 {

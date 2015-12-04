@@ -1,11 +1,11 @@
 <?php
-namespace App\Gitter\Models;
-use App\Gitter\Client;
-use Carbon\Carbon;
+namespace Gitter\Models;
+
+use Gitter\Client;
 
 /**
  * Class Room
- * @package App\Gitter\Models
+ * @package Gitter\Models
  *
  * === Attributes ===
  *

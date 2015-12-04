@@ -1,19 +1,17 @@
 <?php
-namespace App\Gitter\Http;
+namespace Gitter\Http;
 
-use App\Gitter\Client;
-use App\Gitter\Http\Stream\Buffer;
-use React\EventLoop\LoopInterface;
-use React\EventLoop\Factory as EventLoop;
-use React\HttpClient\Client as ReactClient;
-use React\HttpClient\Factory as HttpClient;
+use Gitter\ { Client, Http\Stream\Buffer };
 use React\Dns\Resolver\Factory as DnsResolver;
-use React\HttpClient\Response as ReactResponse;
+use React\EventLoop\LoopInterface;
 use React\Socket\ConnectionException;
+use React\HttpClient\{
+    Factory as HttpClient, Response as ReactResponse
+};
 
 /**
  * Class Stream
- * @package App\Gitter\Http
+ * @package Gitter\Http
  */
 class Stream
 {
@@ -30,10 +28,10 @@ class Stream
      */
     public function __construct(Client $client, LoopInterface $loop, Route $route)
     {
-        $dns            = (new DnsResolver())->createCached('8.8.8.8', $loop);
-        $client         = (new HttpClient())->create($loop, $dns);
+        $dns = (new DnsResolver())->createCached('8.8.8.8', $loop);
+        $client = (new HttpClient())->create($loop, $dns);
 
-        $this->request  = $client->request('GET', $route->get(), ['Connection' => 'Keep-Alive']);
+        $this->request = $client->request('GET', $route->get(), ['Connection' => 'Keep-Alive']);
     }
 
     /**
@@ -43,8 +41,10 @@ class Stream
      */
     public function fetch(callable $fulfilled = null, callable $rejected = null)
     {
-        $fulfilled = $fulfilled ?: function($data) {};
-        $rejected  = $rejected ?: function($error) {};
+        $fulfilled = $fulfilled ?: function ($data) {
+        };
+        $rejected = $rejected ?: function ($error) {
+        };
 
         try {
             $buffer = new Buffer();
@@ -64,7 +64,9 @@ class Stream
             });
 
             $buffer->subscribe(function ($data) use ($fulfilled) {
-                if (!trim($data)) { return; }
+                if (!trim($data)) {
+                    return;
+                }
 
                 $fulfilled($data);
             });

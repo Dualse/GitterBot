@@ -1,5 +1,6 @@
 <?php
 namespace App\Gitter\Extensions\Middleware;
+
 use Illuminate\Contracts\Support\Arrayable;
 
 /**

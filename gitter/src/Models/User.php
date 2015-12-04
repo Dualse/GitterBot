@@ -1,11 +1,11 @@
 <?php
-namespace App\Gitter\Models;
+namespace Gitter\Models;
 
 use GuzzleHttp\Promise\PromiseInterface;
 
 /**
  * Class User
- * @package App\Gitter\Models
+ * @package Gitter\Models
  *
  * === Attributes ===
  *

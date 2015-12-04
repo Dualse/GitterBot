@@ -1,0 +1,18 @@
+{
+    "name": "laravelrus/gitter-api",
+    "description": "Gitter Client",
+    "type": "library",
+    "require": {
+        "php": ">=7.0",
+        "illuminate/support": "5.1.*",
+        "react/react": "^0.4.2",
+        "react/socket-client": "^0.4.4",
+        "react/http-client": "^0.4.6",
+        "guzzlehttp/guzzle": "^6.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Gitter\\": "src/"
+        }
+    }
+}

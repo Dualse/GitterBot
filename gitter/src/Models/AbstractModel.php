@@ -1,13 +1,14 @@
 <?php
-namespace App\Gitter\Models;
+namespace Gitter\Models;
 
-use App\Gitter\Client;
-use Illuminate\Contracts\Support\Arrayable;
-use Illuminate\Contracts\Support\Jsonable;
+use Gitter\Client;
+use Illuminate\Contracts\Support\ {
+    Jsonable, Arrayable
+};
 
 /**
  * Class AbstractModel
- * @package App\Gitter\Models
+ * @package Gitter\Models
  */
 abstract class AbstractModel implements Arrayable, Jsonable
 {
@@ -58,6 +59,15 @@ abstract class AbstractModel implements Arrayable, Jsonable
     }
 
     /**
+     * @param int $options
+     * @return string
+     */
+    public function toJson($options = 0)
+    {
+        return json_encode($this->toArray());
+    }
+
+    /**
      * @return array
      */
     public function toArray()
@@ -68,15 +78,7 @@ abstract class AbstractModel implements Arrayable, Jsonable
                 ? $value->toArray()
                 : $value;
         }
-        return $result;
-    }
 
-    /**
-     * @param int $options
-     * @return string
-     */
-    public function toJson($options = 0)
-    {
-        return json_encode($this->toArray());
+        return $result;
     }
 }

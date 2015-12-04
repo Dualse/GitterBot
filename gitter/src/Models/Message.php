@@ -1,20 +1,19 @@
 <?php
-namespace App\Gitter\Models;
+namespace Gitter\Models;
 
-use App\Gitter\Client;
-use Carbon\Carbon;
+use Gitter\Client;
 
 /**
  * Class Message
- * @package App\Gitter\Models
+ * @package Gitter\Models
  *
  * === Attributes ===
  *
  * @property-read string $id
  * @property-read string $text
  * @property-read string $html
- * @property-read Carbon $sent
- * @property-read Carbon $editedAt
+ * @property-read string $sent
+ * @property-read string $editedAt
  * @property-read User $fromUser
  * @property-read bool $unread
  * @property-read int $readBy
@@ -38,6 +37,16 @@ class Message extends AbstractModel
     {
         $data->fromUser = new User($client, $data->fromUser);
         $data->room     = $room;
+
+
+        $mentions = $data->mentions;
+        $data->mentions = [];
+        foreach ($mentions as $mention) {
+            if (!property_exists($mention, 'userId') || in_array($mention->userId, $data->mentions)) {
+                continue;
+            }
+            $data->mentions[] = $mention->userId;
+        }
 
         parent::__construct($client, $data);
     }

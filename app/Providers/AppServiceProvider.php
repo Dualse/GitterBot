@@ -18,11 +18,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        Message::factoryRegister(MessageFactory::class);
-        User::factoryRegister(UserFactory::class);
-
         Message::observe(MessageObserver::class);
-
     }
 
     /**

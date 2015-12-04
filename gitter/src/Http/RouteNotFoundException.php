@@ -1,9 +1,9 @@
 <?php
-namespace App\Gitter\Http;
+namespace Gitter\Http;
 
 /**
  * Class RouteNotFoundException
- * @package App\Gitter\Http
+ * @package Gitter\Http
  */
 class RouteNotFoundException extends \RuntimeException
 {

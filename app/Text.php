@@ -41,6 +41,7 @@ class Text implements \JsonSerializable
     public function typeof($type)
     {
         $function = 'is_' . strtolower($type);
+
         return $function($this->content);
     }
 
@@ -49,12 +50,33 @@ class Text implements \JsonSerializable
      * @param bool $ignoreCase
      * @return bool
      */
-    public function match($content, $ignoreCase = false)
+    public function is($content, $ignoreCase = false)
     {
         if ($ignoreCase) {
             return mb_strtolower($this->content) === mb_strtolower($content);
         }
+
         return $this->content === $content;
+    }
+
+    /**
+     * @param $pattern
+     * @return int
+     */
+    public function match($pattern)
+    {
+        return preg_match('/^' . $pattern . '$/isu', $this->content);
+    }
+
+    /**
+     * @param $pattern
+     * @return mixed
+     */
+    public function matches($pattern)
+    {
+        preg_match('/^' . $pattern . '$/isu', $this->content, $matches);
+
+        return $matches;
     }
 
     /**
@@ -67,6 +89,7 @@ class Text implements \JsonSerializable
         if ($ignoreCase) {
             return mb_strstr(mb_strtolower($this->content), mb_strtolower($content));
         }
+
         return mb_strstr($this->content, $content);
     }
 

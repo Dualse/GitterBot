@@ -1,9 +1,9 @@
 <?php
-namespace App\Gitter\Http\Stream;
+namespace Gitter\Http\Stream;
 
 /**
  * Class Buffer
- * @package App\Gitter\Http\Stream
+ * @package Gitter\Http\Stream
  */
 class Buffer
 {

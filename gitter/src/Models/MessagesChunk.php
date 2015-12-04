@@ -1,13 +1,14 @@
 <?php
-namespace App\Gitter\Models;
+namespace Gitter\Models;
 
-use App\Gitter\Client;
-use App\Gitter\Http\Route;
+use Gitter\ {
+    Client, Http\Route
+};
 use Illuminate\Support\Collection;
 
 /**
  * Class MessagesChunk
- * @package App\Gitter\Models
+ * @package Gitter\Models
  */
 class MessagesChunk extends Collection
 {
@@ -39,18 +40,8 @@ class MessagesChunk extends Collection
      */
     public function next()
     {
-        return $this->query(function(Route $route) {
+        return $this->query(function (Route $route) {
             return $route->with('afterId', $this->last()->id);
-        });
-    }
-
-    /**
-     * @return MessagesChunk|Message[]
-     */
-    public function prev()
-    {
-        return $this->query(function(Route $route) {
-            return $route->with('beforeId', $this->first()->id);
         });
     }
 
@@ -62,23 +53,36 @@ class MessagesChunk extends Collection
     public function query(callable $forRoute = null, bool $async = false)
     {
         if ($forRoute === null) {
-            $forRoute = function(Route $route) { return $route; };
+            $forRoute = function (Route $route) {
+                return $route;
+            };
         }
 
         $result = $forRoute(
-                    $this->client
-                        ->request('room.messages')
-                        ->where('roomId', $this->room->id)
-                        ->with('limit', 100)
-                )
-                ->then(function ($messages) {
-                    $result = [];
-                    foreach ($messages as $message) {
-                        $result[] = new Message($this->client, $this->room, $message);
-                    }
-                    return $result;
-                });
+            $this->client
+                ->request('room.messages')
+                ->where('roomId', $this->room->id)
+                ->with('limit', 100)
+        )
+            ->then(function ($messages) {
+                $result = [];
+                foreach ($messages as $message) {
+                    $result[] = new Message($this->client, $this->room, $message);
+                }
+
+                return $result;
+            });
 
         return new static($this->client, $this->room, $result->wait());
+    }
+
+    /**
+     * @return MessagesChunk|Message[]
+     */
+    public function prev()
+    {
+        return $this->query(function (Route $route) {
+            return $route->with('beforeId', $this->first()->id);
+        });
     }
 }

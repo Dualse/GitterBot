@@ -1,12 +1,11 @@
 <?php
-namespace App\Gitter\Http;
+namespace Gitter\Http;
 
-use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Psr7\Response as GuzzleResponse;
 
 /**
  * Class Response
- * @package App\Gitter\Http
+ * @package Gitter\Http
  */
 class Response
 {
@@ -42,11 +41,11 @@ class Response
      */
     public function __construct(string $url, GuzzleResponse $response)
     {
-        $this->response     = $response;
-        $this->status       = $response->getStatusCode();
-        $this->headers      = $response->getHeaders();
-        $this->statusText   = $response->getReasonPhrase();
-        $this->url          = $url;
+        $this->response = $response;
+        $this->status = $response->getStatusCode();
+        $this->headers = $response->getHeaders();
+        $this->statusText = $response->getReasonPhrase();
+        $this->url = $url;
     }
 
     /**

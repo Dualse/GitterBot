@@ -14,7 +14,6 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         \App\Console\Commands\GitterRoomListenCommand::class,
-        \App\Console\Commands\GitterRoomSyncCommand::class,
         \App\Console\Commands\GitterRoomFillCommand::class,
     ];
 

@@ -1,25 +1,22 @@
 <?php
-namespace App\Gitter;
+namespace Gitter;
 
 
-use App\Gitter\Http\Route;
-use App\Gitter\Http\Stream;
-use App\Gitter\Models\Room;
-use App\Gitter\Models\User;
-use App\Gitter\Http\Request;
-use App\Gitter\Http\Response;
-use App\Gitter\Models\Message;
-use App\Gitter\Http\RouteStorage;
-use Illuminate\Contracts\Container\Container;
-use React\EventLoop\LoopInterface;
+use Gitter\Http\ {
+    Request, Response, Route, RouteStorage, Stream
+};
+use Gitter\Models\ {
+    Message, Room, User
+};
 use GuzzleHttp\Promise\PromiseInterface;
-use React\EventLoop\Factory as EventLoop;
-use React\EventLoop\Timer\Timer;
+use React\EventLoop\{
+    Factory as EventLoop, LoopInterface, Timer\Timer
+};
 
 
 /**
  * Class Client
- * @package App\Gitter
+ * @package Gitter
  *
  * === Relations ===
  *
@@ -69,7 +66,7 @@ class Client
     {
         $this->debug = $debug;
         $this->token = $token;
-        $this->loop  = EventLoop::create();
+        $this->loop = EventLoop::create();
 
         $this->routes = (new RouteStorage)
             ->resolver(function (Route $route) {
@@ -80,114 +77,16 @@ class Client
     }
 
     /**
-     * @param Route $route
-     * @return $this
-     */
-    public function logRoute(Route $route)
-    {
-        if ($this->debug) {
-            echo "\n" . ' --> ' . $route->get() . "\n";
-        }
-        return $this;
-    }
-
-    /**
-     * @param $timer
-     */
-    public function cancelTimer(Timer $timer)
-    {
-        $this->loop->cancelTimer($timer);
-    }
-
-    /**
-     * @param callable $callback
-     * @param int $timer
-     * @return \React\EventLoop\Timer\Timer|\React\EventLoop\Timer\TimerInterface
-     */
-    public function setInterval(callable $callback, int $timer = 1)
-    {
-        return $this->loop->addPeriodicTimer($timer, $callback);
-    }
-
-    /**
-     * @param callable $callback
-     * @param int $timer
-     * @return \React\EventLoop\Timer\Timer|\React\EventLoop\Timer\TimerInterface
-     */
-    public function setTimeout(callable $callback, int $timer = 1)
-    {
-        return $this->loop->addTimer($timer, $callback);
-    }
-
-    /**
-     * @return User|PromiseInterface
-     */
-    public function getUser()
-    {
-        return $this->user;
-    }
-
-    /**
-     * @param Container $container
-     * @return $this
-     */
-    public function register(Container $container)
-    {
-        $container->singleton(static::class, function() { return $this; });
-        return $this;
-    }
-
-    /**
-     * @param Room $room
-     * @param callable|null $fulfilled
-     * @param callable|null $rejected
-     * @return Stream
-     */
-    public function stream(Room $room, callable $fulfilled = null, callable $rejected = null)
-    {
-        if ($fulfilled === null) { $fulfilled = function() {}; }
-        if ($rejected === null)  { $rejected  = function() {}; }
-
-        $room  = $this->room($room->id);
-
-        $route = $this->routes
-            ->get('stream.messages')
-            ->where('roomId', $room->id);
-
-        $this->logRoute($route);
-
-        return (new Stream($this, $this->loop, $route))
-            ->fetch(function($data) use ($fulfilled, $rejected, $room) {
-                // Parse JSON response
-                $result = json_decode($data);
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    return $rejected(new \LogicException((string)json_last_error_msg(), (int)json_last_error()));
-                }
-
-                // StdClass to Message
-                try {
-                    $message = new Message($this, $room, $result);
-                    $fulfilled($message);
-                } catch (\Exception $e) {
-                    $rejected($e);
-                }
-
-                return null;
-            }, $rejected);
-    }
-
-    /**
      * @param bool $async
-     * @return PromiseInterface|Room[]
+     * @return PromiseInterface|User
      * @throws \RuntimeException
      */
-    public function rooms($async = false)
+    public function user($async = false)
     {
-        $result = $this->request('room.all')
-            ->then(function ($rooms) {
-                foreach ($rooms as $roomData) {
-                    yield new Room($this, $roomData);
-                }
+        $result = $this
+            ->request('user.current')
+            ->then(function ($users) {
+                return new User($this, $users[0]);
             });
 
         return $async ? $result : $result->wait();
@@ -237,14 +136,14 @@ class Client
                 $arguments = array_merge([
                     'method'  => 'GET',
                     'headers' => [],
-                    'body'    => null
+                    'body'    => null,
                 ], $arguments);
 
                 if (strtoupper($arguments['method']) !== 'GET') {
                     $arguments['headers']['Authorization'] = 'Bearer ' . $this->token;
                 }
 
-                $this->client->logRoute($this);
+                $this->client->logRoute($this, $arguments);
 
                 return Request::fetch($this->get(), $arguments)
                     ->then(function (Response $response) {
@@ -275,6 +174,105 @@ class Client
     }
 
     /**
+     * @param Route $route
+     * @param null $args
+     * @return $this
+     */
+    public function logRoute(Route $route, $args = null)
+    {
+        if ($this->debug) {
+            echo (is_string($args) ? ($args . ' ') : '') . $route->get() . "\n";
+            if ($args && !is_string($args)) {
+                $output = preg_replace('/(\s*\(|\s*\)|\n*array\n*)/isu', '', print_r($args, 1));
+                echo preg_replace('/(\n\n)/isu', "\n", $output) . "\n";
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param $timer
+     */
+    public function cancelTimer(Timer $timer)
+    {
+        $this->loop->cancelTimer($timer);
+    }
+
+    /**
+     * @param callable $callback
+     * @param int $timer
+     * @return \React\EventLoop\Timer\Timer|\React\EventLoop\Timer\TimerInterface
+     */
+    public function setInterval(callable $callback, int $timer = 1)
+    {
+        return $this->loop->addPeriodicTimer($timer, $callback);
+    }
+
+    /**
+     * @param callable $callback
+     * @param int $timer
+     * @return \React\EventLoop\Timer\Timer|\React\EventLoop\Timer\TimerInterface
+     */
+    public function setTimeout(callable $callback, int $timer = 1)
+    {
+        return $this->loop->addTimer($timer, $callback);
+    }
+
+    /**
+     * @return User|PromiseInterface
+     */
+    public function getUser()
+    {
+        return $this->user;
+    }
+
+    /**
+     * @param string $roomId
+     * @param callable|null $fulfilled
+     * @param callable|null $rejected
+     * @return Stream
+     */
+    public function stream(string $roomId, callable $fulfilled = null, callable $rejected = null)
+    {
+        if ($fulfilled === null) {
+            $fulfilled = function () {
+            };
+        }
+        if ($rejected === null) {
+            $rejected = function () {
+            };
+        }
+
+        $room = $this->room($roomId);
+
+        $route = $this->routes
+            ->get('stream.messages')
+            ->where('roomId', $room->id);
+
+        $this->logRoute($route, 'GET');
+
+        return (new Stream($this, $this->loop, $route))
+            ->fetch(function ($data) use ($fulfilled, $rejected, $room) {
+                // Parse JSON response
+                $result = json_decode($data);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    return $rejected(new \LogicException((string)json_last_error_msg(), (int)json_last_error()));
+                }
+
+                // StdClass to Message
+                try {
+                    $message = new Message($this, $room, $result);
+                    $fulfilled($message);
+                } catch (\Exception $e) {
+                    $rejected($e);
+                }
+
+                return null;
+            }, $rejected);
+    }
+
+    /**
      * @param $roomId
      * @return PromiseInterface|Room
      */
@@ -294,15 +292,16 @@ class Client
 
     /**
      * @param bool $async
-     * @return PromiseInterface|User
+     * @return PromiseInterface|Room[]
      * @throws \RuntimeException
      */
-    public function user($async = false)
+    public function rooms($async = false)
     {
-        $result = $this
-            ->request('user.current')
-            ->then(function ($users) {
-                return new User($this, $users[0]);
+        $result = $this->request('room.all')
+            ->then(function ($rooms) {
+                foreach ($rooms as $roomData) {
+                    yield new Room($this, $roomData);
+                }
             });
 
         return $async ? $result : $result->wait();

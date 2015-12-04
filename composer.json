@@ -30,7 +30,8 @@
             "app/Support/helpers.php"
         ],
         "psr-4": {
-            "App\\": "app/"
+            "App\\": "app/",
+            "Gitter\\": "gitter/src/"
         }
     },
     "autoload-dev": {

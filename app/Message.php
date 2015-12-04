@@ -1,14 +1,9 @@
 <?php
 namespace App;
 
-use App\Support\EloquentFactoryTrait;
 use Carbon\Carbon;
-use App\Gitter\Client;
-use App\Gitter\Models\User as GitterUser;
-use App\Gitter\Models\Room as GitterRoom;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
-use App\Gitter\Models\Message as GitterMessage;
+use Gitter\Models\Message as GitterMessage;
+use Illuminate\Database\Eloquent\ { Builder, Collection };
 
 /**
  * Class Message
@@ -24,19 +19,17 @@ use App\Gitter\Models\Message as GitterMessage;
  * @property Carbon $created_at
  * @property Carbon $updated_at
  *
- * @property-read User[]|Collection $mentions
+ * @property-read Mention[]|Collection $mentions
  * @property-read User $user
  *
- * @method Message forRoom(GitterRoom $room)
+ * @method Message forRoom(Room $room)
  */
 class Message extends \Eloquent
 {
-    use EloquentFactoryTrait;
-
     /**
      * @var string
      */
-    protected $primaryKey = 'gitter_id';
+    protected $primaryKey = 'id';
 
     /**
      * @var string
@@ -49,32 +42,76 @@ class Message extends \Eloquent
     protected $fillable = ['gitter_id', 'user_id', 'room_id', 'text', 'html', 'urls', 'created_at', 'updated_at'];
 
     /**
+     * @param GitterMessage $gitter
+     * @return Message
+     */
+    public static function createFromGitterMessage(GitterMessage $gitter)
+    {
+        // Mentions
+        foreach ($gitter->mentions as $mention) {
+            Mention::firstOrCreate([
+                'user_id'    => $mention,
+                'message_id' => $gitter->id,
+            ]);
+        }
+
+        /** @var Message $message */
+        $message = Message::where(['gitter_id' => $gitter->id])->first();
+        if (!$message) {
+            $message = Message::create([
+                'gitter_id' => $gitter->id,
+                'user_id'   => $gitter->fromUser->id,
+                'room_id'   => $gitter->room->id,
+                'text'      => $gitter->text,
+                'html'      => $gitter->html,
+                'urls'      => json_encode($gitter->urls),
+
+                'created_at' => (new Carbon($gitter->sent ?? date('Y-m-d H:i:s', 0)))
+                    ->setTimezone('Europe/Moscow')
+                    ->timestamp,
+
+                'updated_at' => (new Carbon($gitter->editedAt ?? date('Y-m-d H:i:s', 0)))
+                    ->setTimezone('Europe/Moscow')
+                    ->timestamp,
+            ]);
+        }
+
+        return $message;
+    }
+
+    /**
      * @param Builder $builder
      * @return $this
      */
     public static function scopeOwn(Builder $builder)
     {
-        /** @var GitterUser $user */
+        /** @var User $user */
         $user = app(Client::class)->getUser();
-        return $builder->where('user_id', $user->id);
+
+        return $builder->where('user_id', $user->gitter_id);
     }
 
     /**
      * @param Builder $builder
-     * @param GitterRoom $room
+     * @param Room|string $room
      * @return $this
      */
-    public static function scopeForRoom(Builder $builder, GitterRoom $room)
+    public static function scopeForRoom(Builder $builder, $room)
     {
-        return $builder->where('room_id', $room->id);
+        $roomId = $room;
+        if ($room instanceof Room) {
+            $roomId = $room->gitter_id;
+        }
+
+        return $builder->where('room_id', $roomId);
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function mentions()
     {
-        return $this->belongsToMany(User::class, 'mentions', 'message_id', 'user_id');
+        return $this->hasMany(Mention::class, 'message_id', 'gitter_id');
     }
 
     /**
@@ -83,6 +120,30 @@ class Message extends \Eloquent
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id', 'gitter_id');
+    }
+
+    /**
+     * @outputs
+     * @param $message
+     * @return mixed
+     */
+    public function answer($message)
+    {
+        // Break while output breaks
+        if (!app('config')->get('gitter.output')) {
+            return null;
+        }
+
+        /** @var Client $client */
+        $client = app(Client::class);
+
+        return await($client
+            ->request('message.send')
+            ->where('roomId', $this->room_id)
+            ->fetch([
+                'method' => 'POST',
+                'body'   => ['text' => $message],
+            ]));
     }
 
     /**
@@ -112,6 +173,7 @@ class Message extends \Eloquent
         if (json_last_error() !== JSON_ERROR_NONE) {
             return [];
         }
+
         return $result;
     }
 }

@@ -1,16 +1,16 @@
 <?php
-namespace App\Gitter\Http;
+namespace Gitter\Http;
 
-use GuzzleHttp\Promise\Promise;
-use GuzzleHttp\Client as Guzzle;
-use GuzzleHttp\Promise\PromiseInterface;
-use Illuminate\Contracts\Support\Jsonable;
-use Illuminate\Contracts\Support\Arrayable;
-use GuzzleHttp\Psr7\Response as Psr7Response;
+use GuzzleHttp\ {
+    Client as Guzzle, Promise\PromiseInterface, Psr7\Response as Psr7Response
+};
+use Illuminate\Contracts\Support\ {
+    Arrayable, Jsonable
+};
 
 /**
  * Class Request
- * @package App\Gitter\Http
+ * @package Gitter\Http
  */
 class Request
 {
@@ -35,6 +35,15 @@ class Request
     protected $headers = [];
 
     /**
+     * Request constructor.
+     * @param string $url
+     */
+    public function __construct(string $url)
+    {
+        $this->url = $url;
+    }
+
+    /**
      * @param $url
      * @param array $args
      * @return PromiseInterface
@@ -55,12 +64,47 @@ class Request
     }
 
     /**
-     * Request constructor.
-     * @param string $url
+     * @return PromiseInterface
      */
-    public function __construct(string $url)
+    public function send()
     {
-        $this->url = $url;
+        $arguments = [
+            'verify'  => false,
+            'headers' => $this->headers,
+        ];
+
+        $setJsonBody = function ($body) use (&$arguments) {
+            $arguments['headers']['Content-Type'] = 'application/json';
+            $arguments['headers']['Accept'] = 'application/json';
+
+            $arguments['body'] = $body;
+        };
+
+        if ($this->body !== null) {
+            switch (true) {
+                case is_array($this->body):
+                case is_object($this->body) && $this->body instanceof \JsonSerializable:
+                    $setJsonBody(json_encode($this->body));
+                    break;
+
+                case is_object($this->body) && $this->body instanceof Arrayable:
+                    $setJsonBody(json_encode($this->body->toArray()));
+                    break;
+
+                case is_object($this->body) && $this->body instanceof Jsonable:
+                    $setJsonBody($this->body->toJson());
+                    break;
+
+                default:
+                    $arguments['body'] = (string)$this->body;
+            }
+        }
+
+        return (new Guzzle)
+            ->requestAsync($this->method, $this->url, $arguments)
+            ->then(function (Psr7Response $response) {
+                return new Response($this->url, $response);
+            });
     }
 
     /**
@@ -162,49 +206,5 @@ class Request
         }
 
         return $this;
-    }
-
-    /**
-     * @return PromiseInterface
-     */
-    public function send()
-    {
-        $arguments = [
-            'verify'  => false,
-            'headers' => $this->headers,
-        ];
-
-        $setJsonBody = function($body) use (&$arguments) {
-            $arguments['headers']['Content-Type'] = 'application/json';
-            $arguments['headers']['Accept']       = 'application/json';
-
-            $arguments['body'] = $body;
-        };
-
-        if ($this->body !== null) {
-            switch(true) {
-                case is_array($this->body):
-                case is_object($this->body) && $this->body instanceof \JsonSerializable:
-                    $setJsonBody(json_encode($this->body));
-                    break;
-
-                case is_object($this->body) && $this->body instanceof Arrayable:
-                    $setJsonBody(json_encode($this->body->toArray()));
-                    break;
-
-                case is_object($this->body) && $this->body instanceof Jsonable:
-                    $setJsonBody($this->body->toJson());
-                    break;
-
-                default:
-                    $arguments['body'] = (string)$this->body;
-            }
-        }
-
-        return (new Guzzle)
-            ->requestAsync($this->method, $this->url, $arguments)
-            ->then(function(Psr7Response $response) {
-                return new Response($this->url, $response);
-            });
     }
 }

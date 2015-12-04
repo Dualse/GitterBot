@@ -1,16 +1,17 @@
 <?php
 namespace App;
 
-use App\Support\EloquentFactoryTrait;
 use Carbon\Carbon;
+use Gitter\Models\User as GitterUser;
 use Illuminate\Auth\Authenticatable;
-use Illuminate\Database\Eloquent\Model;
-use App\Gitter\Models\User as GitterUser;
 use Illuminate\Auth\Passwords\CanResetPassword;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\Access\Authorizable;
-use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
-use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
-use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
+use Illuminate\Contracts\Auth\{
+    Authenticatable as AuthenticatableContract,
+    Access\Authorizable as AuthorizableContract,
+    CanResetPassword as CanResetPasswordContract
+};
 
 /**
  * Class User
@@ -36,13 +37,7 @@ class User extends Model implements
 {
     use Authenticatable,
         Authorizable,
-        CanResetPassword,
-        EloquentFactoryTrait;
-
-    /**
-     * @var string
-     */
-    protected $primaryKey = 'gitter_id';
+        CanResetPassword;
 
     /**
      * The database table used by the model.
@@ -61,4 +56,24 @@ class User extends Model implements
      * @var array
      */
     protected $hidden = ['password', 'remember_token'];
+
+    /**
+     * @param GitterUser $gitter
+     * @return User
+     */
+    public static function createFromGitterUser(GitterUser $gitter)
+    {
+        /** @var User $user */
+        $user = User::firstOrNew(['gitter_id' => $gitter->id]);
+
+        $user->name = $gitter->displayName;
+        $user->avatar = $gitter->avatarUrlMedium;
+        $user->url = $gitter->url;
+        $user->login = $gitter->username;
+        $user->email = null;
+        $user->password = null;
+        $user->save();
+
+        return $user;
+    }
 }

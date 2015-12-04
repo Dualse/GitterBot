@@ -2,6 +2,7 @@
 namespace App\Support\Lazy;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 /**
  * Class EloquentReader
