@@ -1,0 +1,66 @@
+@charset "utf-8";
+
+$font: (
+        size: 14px,
+        weight: 400,
+        family: ("FiraSans", Helvetica, Arial, sans-serif),
+        mono:   ("FiraMono", "Consolas", "Menlo", "Courier", monospace)
+);
+
+$width: 1100px;
+
+@import "vendor/font-awesome";
+@import "vendor/normalize";
+@import "vendor/utils";
+
+html,
+body {
+  @extend .font-optimize;
+  min-height: 100%;
+  color: #333;
+  min-width: $width;
+
+  font: {
+    family: map-get($font, family);
+    size: 14px;
+    weight: 400;
+  }
+}
+
+
+body {
+  overflow-y: scroll;
+  background: #f1f1f1;
+
+  * {
+    box-sizing: border-box;
+  }
+
+  a {
+    color: #f4645f;
+    text-decoration: underline;
+
+    &:hover {
+      color: darken(#f4645f, 10%);
+    }
+  }
+
+  .content {
+    max-width: 1100px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  h1 {
+    font-size: 38px;
+  }
+
+  h1, h2, h3 {
+    font-weight: 100;
+    color: #525252;
+  }
+
+  h3 {
+    font-weight: 300;
+  }
+}
