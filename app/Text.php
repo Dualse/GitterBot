@@ -36,12 +36,13 @@ class Text implements \JsonSerializable
 
     /**
      * @return Text
+     * @TODO Improve regular expressions needed
      */
     public function escape()
     {
         $content = $this->content;
 
-        $content = preg_replace('/(?P<char>(?:_|\*))(.+?)(?P=char)/isu', '\\\$1$2\\\$1', $content); // Bug
+        $content = preg_replace('/(?P<char>(?:_|\*))(.+?)(?P=char)/isu', '\\\$1$2\\\$1', $content);
         $content = preg_replace('/\*\*(.+?)\*\*/isu', '*\\*$1*\\*', $content);
         $content = preg_replace('/\-\-(\-)+/isu', '\-\-\-', $content);
         $content = preg_replace('/\n*^(?!\w\s+)(#)/isu', '\\#', $content);
