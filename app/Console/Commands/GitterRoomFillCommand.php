@@ -34,7 +34,6 @@ class GitterRoomFillCommand extends AbstractGitterCommand
      */
     public function handle(Container $app, Repository $config)
     {
-
         // Create a new API Gitter client
         $client = $this->login($app, $config);
 

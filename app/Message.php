@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\ { Builder, Collection };
  * @property string $user_id
  * @property string $room_id
  * @property Text $text
+ * @property array $sentences
  * @property string $html
  * @property array $urls
  * @property Carbon $created_at

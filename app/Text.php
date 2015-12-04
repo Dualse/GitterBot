@@ -22,13 +22,28 @@ class Text implements \JsonSerializable
     }
 
     /**
+     * @return Text[]|array
+     */
+    public function sentences()
+    {
+        $result = [];
+        foreach (preg_split('/(\n|:[a-z_]+:|\.|\){2,})/isu', $this->content) as $text) {
+            $text = trim($text);
+            if ($text) { $result[] = new Text($text); }
+        }
+        return $result;
+    }
+
+    /**
      * @return Text
      */
     public function escape()
     {
         $content = $this->content;
 
-        $content = preg_replace('/(\*_\#)/isu', '\\$1', $content);
+        $content = preg_replace('/\*\*(.+?)\*\*/isu', '\\*\\*$1\\*\\*', $content);
+        $content = preg_replace('/(?P<char>(?:^(?!\\\).)(?:_|\*))(.+?)(?P=char)/isu', '\\\$1$2\\\$1', $content); // Bug
+        $content = preg_replace('/\n(#)/isu', '\n\\$1', $content);
         $content = preg_replace('/\[(.*?)\]\((.*?)\)/isu', '\\[$1\\]\\($2\\)', $content);
 
         return new Text($content);
@@ -96,7 +111,7 @@ class Text implements \JsonSerializable
     /**
      * @return string
      */
-    public function words()
+    public function onlyWords()
     {
         $content = $this->content;
 

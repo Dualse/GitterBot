@@ -40,15 +40,7 @@ class GoogleSearchMiddleware implements MiddlewareInterface
                 return $next($message);
             }
 
-            $hasMentions = $message->mentions->count();
-            $mention = null;
-
-            if ($hasMentions) {
-                $first = $message->mentions[0]->user;
-                $mention = $first->login === app(Client::class)->user->login
-                    ? $message->user
-                    : $first;
-            }
+            $mention = $this->getUserLogin($message);
 
             return trim($matches[1]) && $mention
                 ? trans('google.personal', [
@@ -61,6 +53,25 @@ class GoogleSearchMiddleware implements MiddlewareInterface
         }
 
         return $next($message);
+    }
+
+    /**
+     * @param Message $message
+     * @return \App\User|null
+     */
+    protected function getUserLogin(Message $message)
+    {
+        $hasMentions = $message->mentions->count();
+        $mention = null;
+
+        if ($hasMentions) {
+            $first = $message->mentions[0]->user;
+            $mention = $first->login === app(Client::class)->user->login
+                ? $message->user
+                : $first;
+        }
+
+        return $mention;
     }
 }
 

@@ -35,9 +35,9 @@
         }
     },
     "autoload-dev": {
-        "classmap": [
-            "tests/TestCase.php"
-        ]
+        "psr-4": {
+            "Unit\\": "tests/"
+        }
     },
     "scripts": {
         "post-install-cmd": [
@@ -45,7 +45,7 @@
             "php artisan optimize"
         ],
         "pre-update-cmd": [
-            "php artisan clear-compiled"
+            "D:/@lang/php7.0/php.exe artisan clear-compiled"
         ],
         "post-update-cmd": [
             "php artisan ide-helper:generate",
