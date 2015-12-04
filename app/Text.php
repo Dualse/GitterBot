@@ -41,9 +41,10 @@ class Text implements \JsonSerializable
     {
         $content = $this->content;
 
-        $content = preg_replace('/\*\*(.+?)\*\*/isu', '\\*\\*$1\\*\\*', $content);
-        $content = preg_replace('/(?P<char>(?:^(?!\\\).)(?:_|\*))(.+?)(?P=char)/isu', '\\\$1$2\\\$1', $content); // Bug
-        $content = preg_replace('/\n(#)/isu', '\n\\$1', $content);
+        $content = preg_replace('/(?P<char>(?:_|\*))(.+?)(?P=char)/isu', '\\\$1$2\\\$1', $content); // Bug
+        $content = preg_replace('/\*\*(.+?)\*\*/isu', '*\\*$1*\\*', $content);
+        $content = preg_replace('/\-\-(\-)+/isu', '\-\-\-', $content);
+        $content = preg_replace('/\n*^(?!\w\s+)(#)/isu', '\\#', $content);
         $content = preg_replace('/\[(.*?)\]\((.*?)\)/isu', '\\[$1\\]\\($2\\)', $content);
 
         return new Text($content);

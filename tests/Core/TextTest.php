@@ -70,7 +70,7 @@ class TextTest extends AbstractTestCase
         $texts = [
             '_italic_'              => '\_italic\_',
             '*italic*'              => '\*italic\*',
-            '**bold**'              => '**bold**',
+            '**bold**'              => '\*\*bold\*\*',
             '![image](image)'       => '!\[image\]\(image\)',
             'not image](not image)' => 'not image](not image)',
             '[url](url)'            => '\[url\]\(url\)',
