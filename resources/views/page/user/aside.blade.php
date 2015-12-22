@@ -4,7 +4,11 @@
              data-bind="attr: { src: avatar, alt: name }" />
     </figure>
 
-    <h1 data-bind="text: login">User Login</h1>
+    <h1 data-bind="text: login">
+        <a data-bind="attr: { href: 'https://github.com/'+login}" tittle="Открыть профиль">
+            User Login
+        </a>
+    </h1>
     <h2 data-bind="text: name">User Name</h2>
 
     <!--ko if: achievements.items().length-->
